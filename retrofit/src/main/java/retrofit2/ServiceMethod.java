@@ -15,6 +15,7 @@
  */
 package retrofit2;
 
+import com.damnhandy.uri.template.UriTemplate;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -22,8 +23,6 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 import okhttp3.Headers;
 import okhttp3.HttpUrl;
@@ -50,21 +49,17 @@ import retrofit2.http.PUT;
 import retrofit2.http.Part;
 import retrofit2.http.PartMap;
 import retrofit2.http.Url;
+import retrofit2.http.Variable;
 
 /** Adapts an invocation of an interface method into an HTTP call. */
 final class ServiceMethod<R, T> {
-  // Upper and lower characters, digits, underscores, and hyphens, starting with a character.
-  static final String PARAM = "[a-zA-Z][a-zA-Z0-9_-]*";
-  static final Pattern PARAM_URL_REGEX = Pattern.compile("\\{(" + PARAM + ")\\}");
-  static final Pattern PARAM_NAME_REGEX = Pattern.compile(PARAM);
-
   final okhttp3.Call.Factory callFactory;
   final CallAdapter<R, T> callAdapter;
 
   private final HttpUrl baseUrl;
   private final Converter<ResponseBody, R> responseConverter;
   private final String httpMethod;
-  private final String relativeUrl;
+  private final UriTemplate urlTemplate;
   private final Headers headers;
   private final MediaType contentType;
   private final boolean hasBody;
@@ -78,7 +73,7 @@ final class ServiceMethod<R, T> {
     this.baseUrl = builder.retrofit.baseUrl();
     this.responseConverter = builder.responseConverter;
     this.httpMethod = builder.httpMethod;
-    this.relativeUrl = builder.relativeUrl;
+    this.urlTemplate = builder.urlTemplate;
     this.headers = builder.headers;
     this.contentType = builder.contentType;
     this.hasBody = builder.hasBody;
@@ -89,7 +84,7 @@ final class ServiceMethod<R, T> {
 
   /** Builds an HTTP request from method arguments. */
   Request toRequest(@Nullable Object... args) throws IOException {
-    RequestBuilder requestBuilder = new RequestBuilder(httpMethod, baseUrl, relativeUrl, headers,
+    RequestBuilder requestBuilder = new RequestBuilder(httpMethod, baseUrl, urlTemplate, headers,
         contentType, hasBody, isFormEncoded, isMultipart);
 
     @SuppressWarnings("unchecked") // It is an error to invoke a method with the wrong arg types.
@@ -134,7 +129,7 @@ final class ServiceMethod<R, T> {
     boolean hasBody;
     boolean isFormEncoded;
     boolean isMultipart;
-    String relativeUrl;
+    UriTemplate urlTemplate;
     Headers headers;
     MediaType contentType;
     ParameterHandler<?>[] parameterHandlers;
@@ -195,7 +190,7 @@ final class ServiceMethod<R, T> {
         parameterHandlers[p] = parseParameter(p, parameterType, parameterAnnotations);
       }
 
-      if (relativeUrl == null && !gotUrl) {
+      if (urlTemplate == null && !gotUrl) {
         throw methodError("Missing either @%s URL or @Url parameter.", httpMethod);
       }
       if (!isFormEncoded && !isMultipart && !hasBody && gotBody) {
@@ -281,18 +276,7 @@ final class ServiceMethod<R, T> {
         return;
       }
 
-      // Get the relative URL path and existing query string, if present.
-      int question = value.indexOf('?');
-      if (question != -1 && question < value.length() - 1) {
-        // Ensure the query string does not have any named parameters.
-        String queryParams = value.substring(question + 1);
-        Matcher queryParamMatcher = PARAM_URL_REGEX.matcher(queryParams);
-        if (queryParamMatcher.find()) {
-          throw methodError("URL query string \"%s\" must not have replace block. ", queryParams);
-        }
-      }
-
-      this.relativeUrl = value;
+      this.urlTemplate = UriTemplate.fromTemplate(value);
     }
 
     private Headers parseHeaders(String[] headers) {
@@ -349,21 +333,29 @@ final class ServiceMethod<R, T> {
         if (gotUrl) {
           throw parameterError(p, "Multiple @Url method annotations found.");
         }
-        if (relativeUrl != null) {
+        if (urlTemplate != null) {
           throw parameterError(p, "@Url cannot be used with @%s URL", httpMethod);
         }
 
         gotUrl = true;
 
-        if (type == HttpUrl.class
+        if (type == UriTemplate.class
+            || type == HttpUrl.class
             || type == String.class
             || type == URI.class
             || (type instanceof Class && "android.net.Uri".equals(((Class<?>) type).getName()))) {
-          return new ParameterHandler.RelativeUrl();
+          return new ParameterHandler.UrlTemplate();
         } else {
           throw parameterError(p,
-              "@Url must be okhttp3.HttpUrl, String, java.net.URI, or android.net.Uri type.");
+              "@Url must be com.damnhandy.uri.template.UriTemplate, okhttp3.HttpUrl, String,"
+                + " java.net.URI, or android.net.Uri type.");
         }
+
+      } else if (annotation instanceof Variable) {
+        Variable variable = (Variable) annotation;
+        String name = variable.value();
+        Converter<?, String> converter = retrofit.stringConverter(type, annotations);
+        return new ParameterHandler.Variable<>(name, converter);
 
       } else if (annotation instanceof Header) {
         Header header = (Header) annotation;

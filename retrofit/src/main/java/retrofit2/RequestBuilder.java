@@ -15,7 +15,11 @@
  */
 package retrofit2;
 
+import com.damnhandy.uri.template.UriTemplate;
+
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import javax.annotation.Nullable;
 import okhttp3.FormBody;
 import okhttp3.Headers;
@@ -30,7 +34,9 @@ final class RequestBuilder {
   private final String method;
 
   private final HttpUrl baseUrl;
-  private @Nullable String relativeUrl;
+
+  private @Nullable UriTemplate urlTemplate;
+  private final Map<String, Object> variables;
 
   private final Request.Builder requestBuilder;
   private @Nullable MediaType contentType;
@@ -40,12 +46,13 @@ final class RequestBuilder {
   private @Nullable FormBody.Builder formBuilder;
   private @Nullable RequestBody body;
 
-  RequestBuilder(String method, HttpUrl baseUrl, @Nullable String relativeUrl,
+  RequestBuilder(String method, HttpUrl baseUrl, @Nullable UriTemplate urlTemplate,
       @Nullable Headers headers, @Nullable MediaType contentType, boolean hasBody,
       boolean isFormEncoded, boolean isMultipart) {
     this.method = method;
     this.baseUrl = baseUrl;
-    this.relativeUrl = relativeUrl;
+    this.urlTemplate = urlTemplate;
+    this.variables = new HashMap<String, Object>();
     this.requestBuilder = new Request.Builder();
     this.contentType = contentType;
     this.hasBody = hasBody;
@@ -64,8 +71,8 @@ final class RequestBuilder {
     }
   }
 
-  void setRelativeUrl(Object relativeUrl) {
-    this.relativeUrl = relativeUrl.toString();
+  void setUrlTemplate(UriTemplate urlTemplate) {
+    this.urlTemplate = urlTemplate;
   }
 
   void addHeader(String name, String value) {
@@ -78,6 +85,10 @@ final class RequestBuilder {
     } else {
       requestBuilder.addHeader(name, value);
     }
+  }
+
+  void addVariable(String name, String value) {
+    variables.put(name, value);
   }
 
   @SuppressWarnings("ConstantConditions") // Only called when isFormEncoded was true.
@@ -104,10 +115,11 @@ final class RequestBuilder {
   }
 
   Request build() {
-    HttpUrl url = baseUrl.resolve(relativeUrl);
+    String expandedTemplate = urlTemplate.expand(variables);
+    HttpUrl url = baseUrl.resolve(expandedTemplate);
     if (url == null) {
       throw new IllegalArgumentException(
-          "Malformed URL. Base: " + baseUrl + ", Relative: " + relativeUrl);
+          "Malformed URL. Base: " + baseUrl + ", Expanded Template: " + expandedTemplate);
     }
 
     RequestBody body = this.body;

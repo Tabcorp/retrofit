@@ -50,6 +50,7 @@
     <!-- Dependencies -->
     <android.version>4.1.1.4</android.version>
     <okhttp.version>3.8.0</okhttp.version>
+	<handy-uri-templates.version>2.1.6</handy-uri-templates.version>
     <animal.sniffer.version>1.14</animal.sniffer.version>
 
     <!-- Adapter Dependencies -->
@@ -115,6 +116,11 @@
         <groupId>com.squareup.okhttp3</groupId>
         <artifactId>okhttp</artifactId>
         <version>${okhttp.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.damnhandy</groupId>
+        <artifactId>handy-uri-templates</artifactId>
+        <version>${handy-uri-templates.version}</version>
       </dependency>
       <dependency>
         <groupId>com.google.code.gson</groupId>

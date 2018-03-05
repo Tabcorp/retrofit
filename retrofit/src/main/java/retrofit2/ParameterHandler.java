@@ -15,6 +15,8 @@
  */
 package retrofit2;
 
+import com.damnhandy.uri.template.UriTemplate;
+
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.Map;
@@ -54,10 +56,16 @@ abstract class ParameterHandler<T> {
     };
   }
 
-  static final class RelativeUrl extends ParameterHandler<Object> {
+  static final class UrlTemplate extends ParameterHandler<Object> {
     @Override void apply(RequestBuilder builder, @Nullable Object value) {
       checkNotNull(value, "@Url parameter is null.");
-      builder.setRelativeUrl(value);
+      UriTemplate template;
+      if (value instanceof UriTemplate) {
+        template = (UriTemplate) value;
+      } else {
+        template = UriTemplate.fromTemplate(value.toString());
+      }
+      builder.setUrlTemplate(template);
     }
   }
 
@@ -77,6 +85,22 @@ abstract class ParameterHandler<T> {
       if (headerValue == null) return; // Skip converted but null values.
 
       builder.addHeader(name, headerValue);
+    }
+  }
+
+  static final class Variable<T> extends ParameterHandler<T> {
+    private final String name;
+    private final Converter<T, String> valueConverter;
+
+    Variable(String name, Converter<T, String> valueConverter) {
+      this.name = checkNotNull(name, "name == null");
+      this.valueConverter = valueConverter;
+    }
+
+    @Override void apply(RequestBuilder builder, @Nullable T value) throws IOException {
+      if (value != null) {
+        builder.addVariable(name, valueConverter.convert(value));
+      }
     }
   }
 
