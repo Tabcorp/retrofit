@@ -63,8 +63,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * Call&lt;ResponseBody&gt; friends(@Query(value="group", encoded=true) String group);
  * </code></pre>
  * Calling with {@code foo.friends("foo+bar"))} yields {@code /friends?group=foo+bar}.
- *
- * @see QueryName
  */
 @Documented
 @Target(PARAMETER)
