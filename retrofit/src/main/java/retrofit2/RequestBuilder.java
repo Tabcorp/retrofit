@@ -24,14 +24,9 @@ import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.Request;
 import okhttp3.RequestBody;
-import okio.Buffer;
 import okio.BufferedSink;
 
 final class RequestBuilder {
-  private static final char[] HEX_DIGITS =
-      { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-  private static final String PATH_SEGMENT_ALWAYS_ENCODE_SET = " \"<>^`{}|\\?#";
-
   private final String method;
 
   private final HttpUrl baseUrl;
@@ -82,62 +77,6 @@ final class RequestBuilder {
       contentType = type;
     } else {
       requestBuilder.addHeader(name, value);
-    }
-  }
-
-  void addPathParam(String name, String value, boolean encoded) {
-    if (relativeUrl == null) {
-      throw new AssertionError();
-    }
-    relativeUrl = relativeUrl.replace("{" + name + "}", canonicalizeForPath(value, encoded));
-  }
-
-  private static String canonicalizeForPath(String input, boolean alreadyEncoded) {
-    int codePoint;
-    for (int i = 0, limit = input.length(); i < limit; i += Character.charCount(codePoint)) {
-      codePoint = input.codePointAt(i);
-      if (codePoint < 0x20 || codePoint >= 0x7f
-          || PATH_SEGMENT_ALWAYS_ENCODE_SET.indexOf(codePoint) != -1
-          || (!alreadyEncoded && (codePoint == '/' || codePoint == '%'))) {
-        // Slow path: the character at i requires encoding!
-        Buffer out = new Buffer();
-        out.writeUtf8(input, 0, i);
-        canonicalizeForPath(out, input, i, limit, alreadyEncoded);
-        return out.readUtf8();
-      }
-    }
-
-    // Fast path: no characters required encoding.
-    return input;
-  }
-
-  private static void canonicalizeForPath(Buffer out, String input, int pos, int limit,
-      boolean alreadyEncoded) {
-    Buffer utf8Buffer = null; // Lazily allocated.
-    int codePoint;
-    for (int i = pos; i < limit; i += Character.charCount(codePoint)) {
-      codePoint = input.codePointAt(i);
-      if (alreadyEncoded
-          && (codePoint == '\t' || codePoint == '\n' || codePoint == '\f' || codePoint == '\r')) {
-        // Skip this character.
-      } else if (codePoint < 0x20 || codePoint >= 0x7f
-          || PATH_SEGMENT_ALWAYS_ENCODE_SET.indexOf(codePoint) != -1
-          || (!alreadyEncoded && (codePoint == '/' || codePoint == '%'))) {
-        // Percent encode this character.
-        if (utf8Buffer == null) {
-          utf8Buffer = new Buffer();
-        }
-        utf8Buffer.writeUtf8CodePoint(codePoint);
-        while (!utf8Buffer.exhausted()) {
-          int b = utf8Buffer.readByte() & 0xff;
-          out.writeByte('%');
-          out.writeByte(HEX_DIGITS[(b >> 4) & 0xf]);
-          out.writeByte(HEX_DIGITS[b & 0xf]);
-        }
-      } else {
-        // This character doesn't need encoding. Just copy it over.
-        out.writeUtf8CodePoint(codePoint);
-      }
     }
   }
 

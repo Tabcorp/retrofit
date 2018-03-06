@@ -89,10 +89,6 @@ public final class Retrofit {
    * {@link HTTP @HTTP}. For a dynamic URL, omit the path on the annotation and annotate the first
    * parameter with {@link Url @Url}.
    * <p>
-   * Method parameters can be used to replace parts of the URL by annotating them with
-   * {@link retrofit2.http.Path @Path}. Replacement sections are denoted by an identifier
-   * surrounded by curly braces (e.g., "{foo}").
-   * <p>
    * The body of a request is denoted by the {@link retrofit2.http.Body @Body} annotation. The
    * object will be converted to request representation by one of the {@link Converter.Factory}
    * instances. A {@link RequestBody} can also be used for a raw representation.
@@ -119,7 +115,7 @@ public final class Retrofit {
    * <pre>
    * public interface CategoryService {
    *   &#64;POST("category/{cat}/")
-   *   Call&lt;List&lt;Item&gt;&gt; categoryList(@Path("cat") String a);
+   *   Call&lt;List&lt;Item&gt;&gt; categoryList();
    * }
    * </pre>
    */

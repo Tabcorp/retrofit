@@ -80,26 +80,6 @@ abstract class ParameterHandler<T> {
     }
   }
 
-  static final class Path<T> extends ParameterHandler<T> {
-    private final String name;
-    private final Converter<T, String> valueConverter;
-    private final boolean encoded;
-
-    Path(String name, Converter<T, String> valueConverter, boolean encoded) {
-      this.name = checkNotNull(name, "name == null");
-      this.valueConverter = valueConverter;
-      this.encoded = encoded;
-    }
-
-    @Override void apply(RequestBuilder builder, @Nullable T value) throws IOException {
-      if (value == null) {
-        throw new IllegalArgumentException(
-            "Path parameter \"" + name + "\" value must not be null.");
-      }
-      builder.addPathParam(name, valueConverter.convert(value), encoded);
-    }
-  }
-
   static final class HeaderMap<T> extends ParameterHandler<Map<String, T>> {
     private final Converter<T, String> valueConverter;
 

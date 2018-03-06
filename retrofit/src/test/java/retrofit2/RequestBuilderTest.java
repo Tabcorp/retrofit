@@ -55,7 +55,6 @@ import retrofit2.http.POST;
 import retrofit2.http.PUT;
 import retrofit2.http.Part;
 import retrofit2.http.PartMap;
-import retrofit2.http.Path;
 import retrofit2.http.Url;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -129,24 +128,6 @@ public final class RequestBuilderTest {
     } catch (IllegalArgumentException e) {
       assertThat(e).hasMessage(
           "Only one encoding annotation is allowed.\n    for method Example.method");
-    }
-  }
-
-  @Test public void invalidPathParam() throws Exception {
-    class Example {
-      @GET("/") //
-      Call<ResponseBody> method(@Path("hey!") String thing) {
-        return null;
-      }
-    }
-
-    try {
-      buildRequest(Example.class);
-      fail();
-    } catch (IllegalArgumentException e) {
-      assertThat(e).hasMessage(
-          "@Path parameter name must match \\{([a-zA-Z][a-zA-Z0-9_-]*)\\}."
-              + " Found: hey! (parameter #1)\n    for method Example.method");
     }
   }
 
@@ -391,22 +372,6 @@ public final class RequestBuilderTest {
     } catch (IllegalArgumentException e) {
       assertThat(e).hasMessage(
           "@Headers value must be in the form \"Name: Value\". Found: \"Malformed\"\n    for method Example.method");
-    }
-  }
-
-  @Test public void pathParamNonPathParamAndTypedBytes() {
-    class Example {
-      @PUT("/{a}") //
-      Call<ResponseBody> method(@Path("a") int a, @Path("b") int b, @Body int c) {
-        return null;
-      }
-    }
-    try {
-      buildRequest(Example.class);
-      fail();
-    } catch (IllegalArgumentException e) {
-      assertThat(e).hasMessage(
-          "URL \"/{a}\" does not contain \"{b}\". (parameter #2)\n    for method Example.method");
     }
   }
 
@@ -704,104 +669,76 @@ public final class RequestBuilderTest {
     assertThat(request.body()).isNull();
   }
 
-  @Test public void getWithPathParam() {
-    class Example {
-      @GET("/foo/bar/{ping}/") //
-      Call<ResponseBody> method(@Path("ping") String ping) {
-        return null;
-      }
-    }
-    Request request = buildRequest(Example.class, "po ng");
-    assertThat(request.method()).isEqualTo("GET");
-    assertThat(request.headers().size()).isZero();
-    assertThat(request.url().toString()).isEqualTo("http://example.com/foo/bar/po%20ng/");
-    assertThat(request.body()).isNull();
-  }
+  // @Test public void getWithPathParam() {
+  //   class Example {
+  //     @GET("/foo/bar/{ping}/") //
+  //     Call<ResponseBody> method(@Path("ping") String ping) {
+  //       return null;
+  //     }
+  //   }
+  //   Request request = buildRequest(Example.class, "po ng");
+  //   assertThat(request.method()).isEqualTo("GET");
+  //   assertThat(request.headers().size()).isZero();
+  //   assertThat(request.url().toString()).isEqualTo("http://example.com/foo/bar/po%20ng/");
+  //   assertThat(request.body()).isNull();
+  // }
 
-  @Test public void getWithUnusedAndInvalidNamedPathParam() {
-    class Example {
-      @GET("/foo/bar/{ping}/{kit,kat}/") //
-      Call<ResponseBody> method(@Path("ping") String ping) {
-        return null;
-      }
-    }
-    Request request = buildRequest(Example.class, "pong");
-    assertThat(request.method()).isEqualTo("GET");
-    assertThat(request.headers().size()).isZero();
-    assertThat(request.url().toString()).isEqualTo("http://example.com/foo/bar/pong/%7Bkit,kat%7D/");
-    assertThat(request.body()).isNull();
-  }
+  // @Test public void getWithUnusedAndInvalidNamedPathParam() {
+  //   class Example {
+  //     @GET("/foo/bar/{ping}/{kit,kat}/") //
+  //     Call<ResponseBody> method(@Path("ping") String ping) {
+  //       return null;
+  //     }
+  //   }
+  //   Request request = buildRequest(Example.class, "pong");
+  //   assertThat(request.method()).isEqualTo("GET");
+  //   assertThat(request.headers().size()).isZero();
+  //   assertThat(request.url().toString()).isEqualTo("http://example.com/foo/bar/pong/%7Bkit,kat%7D/");
+  //   assertThat(request.body()).isNull();
+  // }
 
-  @Test public void getWithEncodedPathParam() {
-    class Example {
-      @GET("/foo/bar/{ping}/") //
-      Call<ResponseBody> method(@Path(value = "ping", encoded = true) String ping) {
-        return null;
-      }
-    }
-    Request request = buildRequest(Example.class, "po%20ng");
-    assertThat(request.method()).isEqualTo("GET");
-    assertThat(request.headers().size()).isZero();
-    assertThat(request.url().toString()).isEqualTo("http://example.com/foo/bar/po%20ng/");
-    assertThat(request.body()).isNull();
-  }
+  // @Test public void getWithUnencodedPathSegmentsPreventsRequestSplitting() {
+  //   class Example {
+  //     @GET("/foo/bar/{ping}/") //
+  //     Call<ResponseBody> method(@Path(value = "ping", encoded = false) String ping) {
+  //       return null;
+  //     }
+  //   }
+  //   Request request = buildRequest(Example.class, "baz/\r\nheader: blue");
+  //   assertThat(request.method()).isEqualTo("GET");
+  //   assertThat(request.headers().size()).isZero();
+  //   assertThat(request.url().toString()).isEqualTo("http://example.com/foo/bar/baz%2F%0D%0Aheader:%20blue/");
+  //   assertThat(request.body()).isNull();
+  // }
 
-  @Test public void getWithEncodedPathSegments() {
-    class Example {
-      @GET("/foo/bar/{ping}/") //
-      Call<ResponseBody> method(@Path(value = "ping", encoded = true) String ping) {
-        return null;
-      }
-    }
-    Request request = buildRequest(Example.class, "baz/pong/more");
-    assertThat(request.method()).isEqualTo("GET");
-    assertThat(request.headers().size()).isZero();
-    assertThat(request.url().toString()).isEqualTo("http://example.com/foo/bar/baz/pong/more/");
-    assertThat(request.body()).isNull();
-  }
+  // @Test public void getWithEncodedPathStillPreventsRequestSplitting() {
+  //   class Example {
+  //     @GET("/foo/bar/{ping}/") //
+  //     Call<ResponseBody> method(@Path(value = "ping", encoded = true) String ping) {
+  //       return null;
+  //     }
+  //   }
+  //   Request request = buildRequest(Example.class, "baz/\r\npong");
+  //   assertThat(request.method()).isEqualTo("GET");
+  //   assertThat(request.headers().size()).isZero();
+  //   assertThat(request.url().toString()).isEqualTo("http://example.com/foo/bar/baz/pong/");
+  //   assertThat(request.body()).isNull();
+  // }
 
-  @Test public void getWithUnencodedPathSegmentsPreventsRequestSplitting() {
-    class Example {
-      @GET("/foo/bar/{ping}/") //
-      Call<ResponseBody> method(@Path(value = "ping", encoded = false) String ping) {
-        return null;
-      }
-    }
-    Request request = buildRequest(Example.class, "baz/\r\nheader: blue");
-    assertThat(request.method()).isEqualTo("GET");
-    assertThat(request.headers().size()).isZero();
-    assertThat(request.url().toString()).isEqualTo("http://example.com/foo/bar/baz%2F%0D%0Aheader:%20blue/");
-    assertThat(request.body()).isNull();
-  }
-
-  @Test public void getWithEncodedPathStillPreventsRequestSplitting() {
-    class Example {
-      @GET("/foo/bar/{ping}/") //
-      Call<ResponseBody> method(@Path(value = "ping", encoded = true) String ping) {
-        return null;
-      }
-    }
-    Request request = buildRequest(Example.class, "baz/\r\npong");
-    assertThat(request.method()).isEqualTo("GET");
-    assertThat(request.headers().size()).isZero();
-    assertThat(request.url().toString()).isEqualTo("http://example.com/foo/bar/baz/pong/");
-    assertThat(request.body()).isNull();
-  }
-
-  @Test public void pathParamRequired() {
-    class Example {
-      @GET("/foo/bar/{ping}/") //
-      Call<ResponseBody> method(@Path("ping") String ping) {
-        return null;
-      }
-    }
-    try {
-      buildRequest(Example.class, new Object[] { null });
-      fail();
-    } catch (IllegalArgumentException e) {
-      assertThat(e.getMessage()).isEqualTo("Path parameter \"ping\" value must not be null.");
-    }
-  }
+  // @Test public void pathParamRequired() {
+  //   class Example {
+  //     @GET("/foo/bar/{ping}/") //
+  //     Call<ResponseBody> method(@Path("ping") String ping) {
+  //       return null;
+  //     }
+  //   }
+  //   try {
+  //     buildRequest(Example.class, new Object[] { null });
+  //     fail();
+  //   } catch (IllegalArgumentException e) {
+  //     assertThat(e.getMessage()).isEqualTo("Path parameter \"ping\" value must not be null.");
+  //   }
+  // }
 
   @Test public void getWithQuery() {
     class Example {
@@ -991,39 +928,39 @@ public final class RequestBuilderTest {
     }
   }
 
-  @Test public void getWithUrlThenPathThrows() {
-    class Example {
-      @GET
-      Call<ResponseBody> method(@Url String url, @Path("hey") String hey) {
-        return null;
-      }
-    }
+  // @Test public void getWithUrlThenPathThrows() {
+  //   class Example {
+  //     @GET
+  //     Call<ResponseBody> method(@Url String url, @Path("hey") String hey) {
+  //       return null;
+  //     }
+  //   }
+  //
+  //   try {
+  //     buildRequest(Example.class, "foo/bar");
+  //     fail();
+  //   } catch (IllegalArgumentException e) {
+  //     assertThat(e).hasMessage("@Path parameters may not be used with @Url. (parameter #2)\n"
+  //         + "    for method Example.method");
+  //   }
+  // }
 
-    try {
-      buildRequest(Example.class, "foo/bar");
-      fail();
-    } catch (IllegalArgumentException e) {
-      assertThat(e).hasMessage("@Path parameters may not be used with @Url. (parameter #2)\n"
-          + "    for method Example.method");
-    }
-  }
-
-  @Test public void getWithPathThenUrlThrows() {
-    class Example {
-      @GET
-      Call<ResponseBody> method(@Path("hey") String hey, @Url Object url) {
-        return null;
-      }
-    }
-
-    try {
-      buildRequest(Example.class, "foo/bar");
-      fail();
-    } catch (IllegalArgumentException e) {
-      assertThat(e).hasMessage("@Path can only be used with relative url on @GET (parameter #1)\n"
-          + "    for method Example.method");
-    }
-  }
+  // @Test public void getWithPathThenUrlThrows() {
+  //   class Example {
+  //     @GET
+  //     Call<ResponseBody> method(@Path("hey") String hey, @Url Object url) {
+  //       return null;
+  //     }
+  //   }
+  //
+  //   try {
+  //     buildRequest(Example.class, "foo/bar");
+  //     fail();
+  //   } catch (IllegalArgumentException e) {
+  //     assertThat(e).hasMessage("@Path can only be used with relative url on @GET (parameter #1)\n"
+  //         + "    for method Example.method");
+  //   }
+  // }
 
   @Test public void postWithUrl() {
     class Example {
@@ -1040,20 +977,20 @@ public final class RequestBuilderTest {
     assertBody(request.body(), "hi");
   }
 
-  @Test public void normalPostWithPathParam() {
-    class Example {
-      @POST("/foo/bar/{ping}/") //
-      Call<ResponseBody> method(@Path("ping") String ping, @Body RequestBody body) {
-        return null;
-      }
-    }
-    RequestBody body = RequestBody.create(TEXT_PLAIN, "Hi!");
-    Request request = buildRequest(Example.class, "pong", body);
-    assertThat(request.method()).isEqualTo("POST");
-    assertThat(request.headers().size()).isZero();
-    assertThat(request.url().toString()).isEqualTo("http://example.com/foo/bar/pong/");
-    assertBody(request.body(), "Hi!");
-  }
+  // @Test public void normalPostWithPathParam() {
+  //   class Example {
+  //     @POST("/foo/bar/{ping}/") //
+  //     Call<ResponseBody> method(@Path("ping") String ping, @Body RequestBody body) {
+  //       return null;
+  //     }
+  //   }
+  //   RequestBody body = RequestBody.create(TEXT_PLAIN, "Hi!");
+  //   Request request = buildRequest(Example.class, "pong", body);
+  //   assertThat(request.method()).isEqualTo("POST");
+  //   assertThat(request.headers().size()).isZero();
+  //   assertThat(request.url().toString()).isEqualTo("http://example.com/foo/bar/pong/");
+  //   assertBody(request.body(), "Hi!");
+  // }
 
   @Test public void emptyBody() {
     class Example {
@@ -1099,20 +1036,20 @@ public final class RequestBuilderTest {
     }
   }
 
-  @Test public void bodyWithPathParams() {
-    class Example {
-      @POST("/foo/bar/{ping}/{kit}/") //
-      Call<ResponseBody> method(@Path("ping") String ping, @Body RequestBody body, @Path("kit") String kit) {
-        return null;
-      }
-    }
-    RequestBody body = RequestBody.create(TEXT_PLAIN, "Hi!");
-    Request request = buildRequest(Example.class, "pong", body, "kat");
-    assertThat(request.method()).isEqualTo("POST");
-    assertThat(request.headers().size()).isZero();
-    assertThat(request.url().toString()).isEqualTo("http://example.com/foo/bar/pong/kat/");
-    assertBody(request.body(), "Hi!");
-  }
+  // @Test public void bodyWithPathParams() {
+  //   class Example {
+  //     @POST("/foo/bar/{ping}/{kit}/") //
+  //     Call<ResponseBody> method(@Path("ping") String ping, @Body RequestBody body, @Path("kit") String kit) {
+  //       return null;
+  //     }
+  //   }
+  //   RequestBody body = RequestBody.create(TEXT_PLAIN, "Hi!");
+  //   Request request = buildRequest(Example.class, "pong", body, "kat");
+  //   assertThat(request.method()).isEqualTo("POST");
+  //   assertThat(request.headers().size()).isZero();
+  //   assertThat(request.url().toString()).isEqualTo("http://example.com/foo/bar/pong/kat/");
+  //   assertBody(request.body(), "Hi!");
+  // }
 
   @Test public void simpleMultipart() throws IOException {
     class Example {

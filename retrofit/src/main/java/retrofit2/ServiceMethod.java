@@ -21,9 +21,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.net.URI;
-import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
@@ -51,7 +49,6 @@ import retrofit2.http.POST;
 import retrofit2.http.PUT;
 import retrofit2.http.Part;
 import retrofit2.http.PartMap;
-import retrofit2.http.Path;
 import retrofit2.http.Url;
 
 /** Adapts an invocation of an interface method into an HTTP call. */
@@ -132,7 +129,6 @@ final class ServiceMethod<R, T> {
     boolean gotField;
     boolean gotPart;
     boolean gotBody;
-    boolean gotPath;
     boolean gotUrl;
     String httpMethod;
     boolean hasBody;
@@ -141,7 +137,6 @@ final class ServiceMethod<R, T> {
     String relativeUrl;
     Headers headers;
     MediaType contentType;
-    Set<String> relativeUrlParamNames;
     ParameterHandler<?>[] parameterHandlers;
     Converter<ResponseBody, T> responseConverter;
     CallAdapter<T, R> callAdapter;
@@ -298,7 +293,6 @@ final class ServiceMethod<R, T> {
       }
 
       this.relativeUrl = value;
-      this.relativeUrlParamNames = parsePathParameters(value);
     }
 
     private Headers parseHeaders(String[] headers) {
@@ -355,9 +349,6 @@ final class ServiceMethod<R, T> {
         if (gotUrl) {
           throw parameterError(p, "Multiple @Url method annotations found.");
         }
-        if (gotPath) {
-          throw parameterError(p, "@Path parameters may not be used with @Url.");
-        }
         if (relativeUrl != null) {
           throw parameterError(p, "@Url cannot be used with @%s URL", httpMethod);
         }
@@ -373,22 +364,6 @@ final class ServiceMethod<R, T> {
           throw parameterError(p,
               "@Url must be okhttp3.HttpUrl, String, java.net.URI, or android.net.Uri type.");
         }
-
-      } else if (annotation instanceof Path) {
-        if (gotUrl) {
-          throw parameterError(p, "@Path parameters may not be used with @Url.");
-        }
-        if (relativeUrl == null) {
-          throw parameterError(p, "@Path can only be used with relative url on @%s", httpMethod);
-        }
-        gotPath = true;
-
-        Path path = (Path) annotation;
-        String name = path.value();
-        validatePathName(p, name);
-
-        Converter<?, String> converter = retrofit.stringConverter(type, annotations);
-        return new ParameterHandler.Path<>(name, converter, path.encoded());
 
       } else if (annotation instanceof Header) {
         Header header = (Header) annotation;
@@ -629,17 +604,6 @@ final class ServiceMethod<R, T> {
       return null; // Not a Retrofit annotation.
     }
 
-    private void validatePathName(int p, String name) {
-      if (!PARAM_NAME_REGEX.matcher(name).matches()) {
-        throw parameterError(p, "@Path parameter name must match %s. Found: %s",
-            PARAM_URL_REGEX.pattern(), name);
-      }
-      // Verify URL replacement name is actually present in the URL path.
-      if (!relativeUrlParamNames.contains(name)) {
-        throw parameterError(p, "URL \"%s\" does not contain \"{%s}\".", relativeUrl, name);
-      }
-    }
-
     private Converter<ResponseBody, T> createResponseConverter() {
       Annotation[] annotations = method.getAnnotations();
       try {
@@ -670,19 +634,6 @@ final class ServiceMethod<R, T> {
     private RuntimeException parameterError(int p, String message, Object... args) {
       return methodError(message + " (parameter #" + (p + 1) + ")", args);
     }
-  }
-
-  /**
-   * Gets the set of unique path parameters used in the given URI. If a parameter is used twice
-   * in the URI, it will only show up once in the set.
-   */
-  static Set<String> parsePathParameters(String path) {
-    Matcher m = PARAM_URL_REGEX.matcher(path);
-    Set<String> patterns = new LinkedHashSet<>();
-    while (m.find()) {
-      patterns.add(m.group(1));
-    }
-    return patterns;
   }
 
   static Class<?> boxIfPrimitive(Class<?> type) {
