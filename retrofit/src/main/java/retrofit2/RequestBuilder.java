@@ -36,7 +36,6 @@ final class RequestBuilder {
 
   private final HttpUrl baseUrl;
   private @Nullable String relativeUrl;
-  private @Nullable HttpUrl.Builder urlBuilder;
 
   private final Request.Builder requestBuilder;
   private @Nullable MediaType contentType;
@@ -88,7 +87,6 @@ final class RequestBuilder {
 
   void addPathParam(String name, String value, boolean encoded) {
     if (relativeUrl == null) {
-      // The relative URL is cleared when the first query parameter is set.
       throw new AssertionError();
     }
     relativeUrl = relativeUrl.replace("{" + name + "}", canonicalizeForPath(value, encoded));
@@ -143,26 +141,6 @@ final class RequestBuilder {
     }
   }
 
-  void addQueryParam(String name, @Nullable String value, boolean encoded) {
-    if (relativeUrl != null) {
-      // Do a one-time combination of the built relative URL and the base URL.
-      urlBuilder = baseUrl.newBuilder(relativeUrl);
-      if (urlBuilder == null) {
-        throw new IllegalArgumentException(
-            "Malformed URL. Base: " + baseUrl + ", Relative: " + relativeUrl);
-      }
-      relativeUrl = null;
-    }
-
-    if (encoded) {
-      //noinspection ConstantConditions Checked to be non-null by above 'if' block.
-      urlBuilder.addEncodedQueryParameter(name, value);
-    } else {
-      //noinspection ConstantConditions Checked to be non-null by above 'if' block.
-      urlBuilder.addQueryParameter(name, value);
-    }
-  }
-
   @SuppressWarnings("ConstantConditions") // Only called when isFormEncoded was true.
   void addFormField(String name, String value, boolean encoded) {
     if (encoded) {
@@ -187,18 +165,10 @@ final class RequestBuilder {
   }
 
   Request build() {
-    HttpUrl url;
-    HttpUrl.Builder urlBuilder = this.urlBuilder;
-    if (urlBuilder != null) {
-      url = urlBuilder.build();
-    } else {
-      // No query parameters triggered builder creation, just combine the relative URL and base URL.
-      //noinspection ConstantConditions Non-null if urlBuilder is null.
-      url = baseUrl.resolve(relativeUrl);
-      if (url == null) {
-        throw new IllegalArgumentException(
-            "Malformed URL. Base: " + baseUrl + ", Relative: " + relativeUrl);
-      }
+    HttpUrl url = baseUrl.resolve(relativeUrl);
+    if (url == null) {
+      throw new IllegalArgumentException(
+          "Malformed URL. Base: " + baseUrl + ", Relative: " + relativeUrl);
     }
 
     RequestBody body = this.body;
