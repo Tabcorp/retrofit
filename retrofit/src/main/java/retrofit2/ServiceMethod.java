@@ -52,7 +52,6 @@ import retrofit2.http.PUT;
 import retrofit2.http.Part;
 import retrofit2.http.PartMap;
 import retrofit2.http.Path;
-import retrofit2.http.Query;
 import retrofit2.http.Url;
 
 /** Adapts an invocation of an interface method into an HTTP call. */
@@ -134,7 +133,6 @@ final class ServiceMethod<R, T> {
     boolean gotPart;
     boolean gotBody;
     boolean gotPath;
-    boolean gotQuery;
     boolean gotUrl;
     String httpMethod;
     boolean hasBody;
@@ -295,8 +293,7 @@ final class ServiceMethod<R, T> {
         String queryParams = value.substring(question + 1);
         Matcher queryParamMatcher = PARAM_URL_REGEX.matcher(queryParams);
         if (queryParamMatcher.find()) {
-          throw methodError("URL query string \"%s\" must not have replace block. "
-              + "For dynamic query parameters use @Query.", queryParams);
+          throw methodError("URL query string \"%s\" must not have replace block. ", queryParams);
         }
       }
 
@@ -361,9 +358,6 @@ final class ServiceMethod<R, T> {
         if (gotPath) {
           throw parameterError(p, "@Path parameters may not be used with @Url.");
         }
-        if (gotQuery) {
-          throw parameterError(p, "A @Url parameter must not come after a @Query");
-        }
         if (relativeUrl != null) {
           throw parameterError(p, "@Url cannot be used with @%s URL", httpMethod);
         }
@@ -381,9 +375,6 @@ final class ServiceMethod<R, T> {
         }
 
       } else if (annotation instanceof Path) {
-        if (gotQuery) {
-          throw parameterError(p, "A @Path parameter must not come after a @Query.");
-        }
         if (gotUrl) {
           throw parameterError(p, "@Path parameters may not be used with @Url.");
         }
@@ -398,36 +389,6 @@ final class ServiceMethod<R, T> {
 
         Converter<?, String> converter = retrofit.stringConverter(type, annotations);
         return new ParameterHandler.Path<>(name, converter, path.encoded());
-
-      } else if (annotation instanceof Query) {
-        Query query = (Query) annotation;
-        String name = query.value();
-        boolean encoded = query.encoded();
-
-        Class<?> rawParameterType = Utils.getRawType(type);
-        gotQuery = true;
-        if (Iterable.class.isAssignableFrom(rawParameterType)) {
-          if (!(type instanceof ParameterizedType)) {
-            throw parameterError(p, rawParameterType.getSimpleName()
-                + " must include generic type (e.g., "
-                + rawParameterType.getSimpleName()
-                + "<String>)");
-          }
-          ParameterizedType parameterizedType = (ParameterizedType) type;
-          Type iterableType = Utils.getParameterUpperBound(0, parameterizedType);
-          Converter<?, String> converter =
-              retrofit.stringConverter(iterableType, annotations);
-          return new ParameterHandler.Query<>(name, converter, encoded).iterable();
-        } else if (rawParameterType.isArray()) {
-          Class<?> arrayComponentType = boxIfPrimitive(rawParameterType.getComponentType());
-          Converter<?, String> converter =
-              retrofit.stringConverter(arrayComponentType, annotations);
-          return new ParameterHandler.Query<>(name, converter, encoded).array();
-        } else {
-          Converter<?, String> converter =
-              retrofit.stringConverter(type, annotations);
-          return new ParameterHandler.Query<>(name, converter, encoded);
-        }
 
       } else if (annotation instanceof Header) {
         Header header = (Header) annotation;

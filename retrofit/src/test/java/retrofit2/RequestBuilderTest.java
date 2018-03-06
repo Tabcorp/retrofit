@@ -56,7 +56,6 @@ import retrofit2.http.PUT;
 import retrofit2.http.Part;
 import retrofit2.http.PartMap;
 import retrofit2.http.Path;
-import retrofit2.http.Query;
 import retrofit2.http.Url;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -154,7 +153,7 @@ public final class RequestBuilderTest {
   @Test public void pathParamNotAllowedInQuery() throws Exception {
     class Example {
       @GET("/foo?bar={bar}") //
-      Call<ResponseBody> method(@Path("bar") String thing) {
+      Call<ResponseBody> method() {
         return null;
       }
     }
@@ -163,39 +162,39 @@ public final class RequestBuilderTest {
       fail();
     } catch (IllegalArgumentException e) {
       assertThat(e).hasMessage(
-          "URL query string \"bar={bar}\" must not have replace block."
-              + " For dynamic query parameters use @Query.\n    for method Example.method");
+          "URL query string \"bar={bar}\" must not have replace block. "
+              + "\n    for method Example.method");
     }
   }
 
-  @Test public void multipleParameterAnnotationsNotAllowed() throws Exception {
-    class Example {
-      @GET("/") //
-      Call<ResponseBody> method(@Body @Query("nope") String o) {
-        return null;
-      }
-    }
-    try {
-      buildRequest(Example.class);
-      fail();
-    } catch (IllegalArgumentException e) {
-      assertThat(e).hasMessage(
-          "Multiple Retrofit annotations found, only one allowed. (parameter #1)\n    for method Example.method");
-    }
-  }
+  // @Test public void multipleParameterAnnotationsNotAllowed() throws Exception {
+  //   class Example {
+  //     @GET("/") //
+  //     Call<ResponseBody> method(@Body @Query("nope") String o) {
+  //       return null;
+  //     }
+  //   }
+  //   try {
+  //     buildRequest(Example.class);
+  //     fail();
+  //   } catch (IllegalArgumentException e) {
+  //     assertThat(e).hasMessage(
+  //         "Multiple Retrofit annotations found, only one allowed. (parameter #1)\n    for method Example.method");
+  //   }
+  // }
 
   @interface NonNull {}
 
-  @Test public void multipleParameterAnnotationsOnlyOneRetrofitAllowed() throws Exception {
-    class Example {
-      @GET("/") //
-      Call<ResponseBody> method(@Query("maybe") @NonNull Object o) {
-        return null;
-      }
-    }
-    Request request = buildRequest(Example.class, "yep");
-    assertThat(request.url().toString()).isEqualTo("http://example.com/?maybe=yep");
-  }
+  // @Test public void multipleParameterAnnotationsOnlyOneRetrofitAllowed() throws Exception {
+  //   class Example {
+  //     @GET("/") //
+  //     Call<ResponseBody> method(@Query("maybe") @NonNull Object o) {
+  //       return null;
+  //     }
+  //   }
+  //   Request request = buildRequest(Example.class, "yep");
+  //   assertThat(request.url().toString()).isEqualTo("http://example.com/?maybe=yep");
+  // }
 
   @Test public void twoMethodsFail() {
     class Example {
@@ -804,71 +803,6 @@ public final class RequestBuilderTest {
     }
   }
 
-  @Test public void getWithQueryParam() {
-    class Example {
-      @GET("/foo/bar/") //
-      Call<ResponseBody> method(@Query("ping") String ping) {
-        return null;
-      }
-    }
-    Request request = buildRequest(Example.class, "pong");
-    assertThat(request.method()).isEqualTo("GET");
-    assertThat(request.headers().size()).isZero();
-    assertThat(request.url().toString()).isEqualTo("http://example.com/foo/bar/?ping=pong");
-    assertThat(request.body()).isNull();
-  }
-
-  @Test public void getWithEncodedQueryParam() {
-    class Example {
-      @GET("/foo/bar/") //
-      Call<ResponseBody> method(@Query(value = "pi%20ng", encoded = true) String ping) {
-        return null;
-      }
-    }
-    Request request = buildRequest(Example.class, "p%20o%20n%20g");
-    assertThat(request.method()).isEqualTo("GET");
-    assertThat(request.headers().size()).isZero();
-    assertThat(request.url().toString()).isEqualTo("http://example.com/foo/bar/?pi%20ng=p%20o%20n%20g");
-    assertThat(request.body()).isNull();
-  }
-
-  @Test public void queryParamOptionalOmitsQuery() {
-    class Example {
-      @GET("/foo/bar/") //
-      Call<ResponseBody> method(@Query("ping") String ping) {
-        return null;
-      }
-    }
-    Request request = buildRequest(Example.class, new Object[] { null });
-    assertThat(request.url().toString()).isEqualTo("http://example.com/foo/bar/");
-  }
-
-  @Test public void queryParamOptional() {
-    class Example {
-      @GET("/foo/bar/") //
-      Call<ResponseBody> method(@Query("foo") String foo, @Query("ping") String ping,
-          @Query("kit") String kit) {
-        return null;
-      }
-    }
-    Request request = buildRequest(Example.class, "bar", null, "kat");
-    assertThat(request.url().toString()).isEqualTo("http://example.com/foo/bar/?foo=bar&kit=kat");
-  }
-
-  @Test public void getWithQueryUrlAndParam() {
-    class Example {
-      @GET("/foo/bar/?hi=mom") //
-      Call<ResponseBody> method(@Query("ping") String ping) {
-        return null;
-      }
-    }
-    Request request = buildRequest(Example.class, "pong");
-    assertThat(request.method()).isEqualTo("GET");
-    assertThat(request.headers().size()).isZero();
-    assertThat(request.url().toString()).isEqualTo("http://example.com/foo/bar/?hi=mom&ping=pong");
-    assertThat(request.body()).isNull();
-  }
-
   @Test public void getWithQuery() {
     class Example {
       @GET("/foo/bar/?hi=mom") //
@@ -880,132 +814,6 @@ public final class RequestBuilderTest {
     assertThat(request.method()).isEqualTo("GET");
     assertThat(request.headers().size()).isZero();
     assertThat(request.url().toString()).isEqualTo("http://example.com/foo/bar/?hi=mom");
-    assertThat(request.body()).isNull();
-  }
-
-  @Test public void getWithPathAndQueryParam() {
-    class Example {
-      @GET("/foo/bar/{ping}/") //
-      Call<ResponseBody> method(@Path("ping") String ping, @Query("kit") String kit,
-          @Query("riff") String riff) {
-        return null;
-      }
-    }
-
-    Request request = buildRequest(Example.class, "pong", "kat", "raff");
-    assertThat(request.method()).isEqualTo("GET");
-    assertThat(request.headers().size()).isZero();
-    assertThat(request.url().toString()).isEqualTo("http://example.com/foo/bar/pong/?kit=kat&riff=raff");
-    assertThat(request.body()).isNull();
-  }
-
-  @Test public void getWithQueryThenPathThrows() {
-    class Example {
-      @GET("/foo/bar/{ping}/") //
-      Call<ResponseBody> method(@Query("kit") String kit, @Path("ping") String ping) {
-        return null;
-      }
-    }
-
-    try {
-      buildRequest(Example.class, "kat", "pong");
-      fail();
-    } catch (IllegalArgumentException e) {
-      assertThat(e).hasMessage("A @Path parameter must not come after a @Query. (parameter #2)\n"
-          + "    for method Example.method");
-    }
-  }
-
-  @Test public void getWithPathAndQueryQuestionMarkParam() {
-    class Example {
-      @GET("/foo/bar/{ping}/") //
-      Call<ResponseBody> method(@Path("ping") String ping, @Query("kit") String kit) {
-        return null;
-      }
-    }
-
-    Request request = buildRequest(Example.class, "pong?", "kat?");
-    assertThat(request.method()).isEqualTo("GET");
-    assertThat(request.headers().size()).isZero();
-    assertThat(request.url().toString()).isEqualTo("http://example.com/foo/bar/pong%3F/?kit=kat?");
-    assertThat(request.body()).isNull();
-  }
-
-  @Test public void getWithPathAndQueryAmpersandParam() {
-    class Example {
-      @GET("/foo/bar/{ping}/") //
-      Call<ResponseBody> method(@Path("ping") String ping, @Query("kit") String kit) {
-        return null;
-      }
-    }
-
-    Request request = buildRequest(Example.class, "pong&", "kat&");
-    assertThat(request.method()).isEqualTo("GET");
-    assertThat(request.headers().size()).isZero();
-    assertThat(request.url().toString()).isEqualTo("http://example.com/foo/bar/pong&/?kit=kat%26");
-    assertThat(request.body()).isNull();
-  }
-
-  @Test public void getWithPathAndQueryHashParam() {
-    class Example {
-      @GET("/foo/bar/{ping}/") //
-      Call<ResponseBody> method(@Path("ping") String ping, @Query("kit") String kit) {
-        return null;
-      }
-    }
-
-    Request request = buildRequest(Example.class, "pong#", "kat#");
-    assertThat(request.method()).isEqualTo("GET");
-    assertThat(request.headers().size()).isZero();
-    assertThat(request.url().toString()).isEqualTo("http://example.com/foo/bar/pong%23/?kit=kat%23");
-    assertThat(request.body()).isNull();
-  }
-
-  @Test public void getWithQueryParamList() {
-    class Example {
-      @GET("/foo/bar/") //
-      Call<ResponseBody> method(@Query("key") List<Object> keys) {
-        return null;
-      }
-    }
-
-    List<Object> values = Arrays.<Object>asList(1, 2, null, "three", "1");
-    Request request = buildRequest(Example.class, values);
-    assertThat(request.method()).isEqualTo("GET");
-    assertThat(request.headers().size()).isZero();
-    assertThat(request.url().toString()).isEqualTo("http://example.com/foo/bar/?key=1&key=2&key=three&key=1");
-    assertThat(request.body()).isNull();
-  }
-
-  @Test public void getWithQueryParamArray() {
-    class Example {
-      @GET("/foo/bar/") //
-      Call<ResponseBody> method(@Query("key") Object[] keys) {
-        return null;
-      }
-    }
-
-    Object[] values = { 1, 2, null, "three", "1" };
-    Request request = buildRequest(Example.class, new Object[] { values });
-    assertThat(request.method()).isEqualTo("GET");
-    assertThat(request.headers().size()).isZero();
-    assertThat(request.url().toString()).isEqualTo("http://example.com/foo/bar/?key=1&key=2&key=three&key=1");
-    assertThat(request.body()).isNull();
-  }
-
-  @Test public void getWithQueryParamPrimitiveArray() {
-    class Example {
-      @GET("/foo/bar/") //
-      Call<ResponseBody> method(@Query("key") int[] keys) {
-        return null;
-      }
-    }
-
-    int[] values = { 1, 2, 3, 1 };
-    Request request = buildRequest(Example.class, new Object[] { values });
-    assertThat(request.method()).isEqualTo("GET");
-    assertThat(request.headers().size()).isZero();
-    assertThat(request.url().toString()).isEqualTo("http://example.com/foo/bar/?key=1&key=2&key=3&key=1");
     assertThat(request.body()).isNull();
   }
 
@@ -1215,37 +1023,6 @@ public final class RequestBuilderTest {
       assertThat(e).hasMessage("@Path can only be used with relative url on @GET (parameter #1)\n"
           + "    for method Example.method");
     }
-  }
-
-  @Test public void getWithQueryThenUrlThrows() {
-    class Example {
-      @GET("foo/bar")
-      Call<ResponseBody> method(@Query("hey") String hey, @Url Object url) {
-        return null;
-      }
-    }
-
-    try {
-      buildRequest(Example.class, "hey", "foo/bar/");
-      fail();
-    } catch (IllegalArgumentException e) {
-      assertThat(e).hasMessage("A @Url parameter must not come after a @Query (parameter #2)\n"
-          + "    for method Example.method");
-    }
-  }
-
-  @Test public void getWithUrlThenQuery() {
-    class Example {
-      @GET
-      Call<ResponseBody> method(@Url String url, @Query("hey") String hey) {
-        return null;
-      }
-    }
-
-    Request request = buildRequest(Example.class, "foo/bar/", "hey!");
-    assertThat(request.method()).isEqualTo("GET");
-    assertThat(request.headers().size()).isZero();
-    assertThat(request.url().toString()).isEqualTo("http://example.com/foo/bar/?hey=hey!");
   }
 
   @Test public void postWithUrl() {
@@ -2360,22 +2137,6 @@ public final class RequestBuilderTest {
 
     assertThat(readBody.indexOf("firstParam")).isLessThan(readBody.indexOf("secondParam"));
     assertThat(readBody.indexOf("secondParam")).isLessThan(readBody.indexOf("thirdParam"));
-  }
-
-  @Test public void queryParamsSkippedIfConvertedToNull() throws Exception {
-    class Example {
-      @GET("/query") Call<ResponseBody> queryPath(@Query("a") Object a) {
-        return null;
-      }
-    }
-
-    Retrofit.Builder retrofitBuilder = new Retrofit.Builder()
-        .baseUrl("http://example.com")
-        .addConverterFactory(new NullObjectConverterFactory());
-
-    Request request = buildRequest(Example.class, retrofitBuilder, "Ignored");
-
-    assertThat(request.url().toString()).doesNotContain("Ignored");
   }
 
   @Test public void fieldParamsSkippedIfConvertedToNull() throws Exception {

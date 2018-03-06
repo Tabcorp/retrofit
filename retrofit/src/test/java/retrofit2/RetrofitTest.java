@@ -48,7 +48,6 @@ import retrofit2.helpers.ToStringConverterFactory;
 import retrofit2.http.Body;
 import retrofit2.http.GET;
 import retrofit2.http.POST;
-import retrofit2.http.Query;
 
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static okhttp3.mockwebserver.SocketPolicy.DISCONNECT_AT_START;
@@ -77,8 +76,8 @@ public final class RetrofitTest {
     @GET("/") Call<ResponseBody> getResponseBody();
     @GET("/") Call<Void> getVoid();
     @POST("/") Call<ResponseBody> postRequestBody(@Body RequestBody body);
-    @GET("/") Call<ResponseBody> queryString(@Query("foo") String foo);
-    @GET("/") Call<ResponseBody> queryObject(@Query("foo") Object foo);
+    // @GET("/") Call<ResponseBody> queryString(@Query("foo") String foo);
+    // @GET("/") Call<ResponseBody> queryObject(@Query("foo") Object foo);
   }
   interface FutureMethod {
     @GET("/") Future<String> method();
@@ -108,14 +107,14 @@ public final class RetrofitTest {
   interface Annotated {
     @GET("/") @Foo Call<String> method();
     @POST("/") Call<ResponseBody> bodyParameter(@Foo @Body String param);
-    @GET("/") Call<ResponseBody> queryParameter(@Foo @Query("foo") Object foo);
+    // @GET("/") Call<ResponseBody> queryParameter(@Foo @Query("foo") Object foo);
 
     @Retention(RUNTIME)
     @interface Foo {}
   }
-  interface MutableParameters {
-    @GET("/") Call<String> method(@Query("i") AtomicInteger value);
-  }
+  // interface MutableParameters {
+  //   @GET("/") Call<String> method(@Query("i") AtomicInteger value);
+  // }
 
   @SuppressWarnings("EqualsBetweenInconvertibleTypes") // We are explicitly testing this behavior.
   @Test public void objectMethodsStillWork() {
@@ -405,68 +404,68 @@ public final class RetrofitTest {
     assertThat(methodAnnotationsRef.get()).hasAtLeastOneElementOfType(POST.class);
   }
 
-  @Test public void parameterAnnotationsPassedToStringConverter() {
-    final AtomicReference<Annotation[]> annotationsRef = new AtomicReference<>();
-    class MyConverterFactory extends Converter.Factory {
-      @Override public Converter<?, String> stringConverter(Type type, Annotation[] annotations,
-          Retrofit retrofit) {
-        annotationsRef.set(annotations);
+  // @Test public void parameterAnnotationsPassedToStringConverter() {
+  //   final AtomicReference<Annotation[]> annotationsRef = new AtomicReference<>();
+  //   class MyConverterFactory extends Converter.Factory {
+  //     @Override public Converter<?, String> stringConverter(Type type, Annotation[] annotations,
+  //         Retrofit retrofit) {
+  //       annotationsRef.set(annotations);
+  //
+  //       return new Converter<Object, String>() {
+  //         @Override public String convert(Object value) throws IOException {
+  //           return String.valueOf(value);
+  //         }
+  //       };
+  //     }
+  //   }
+  //   Retrofit retrofit = new Retrofit.Builder()
+  //       .baseUrl(server.url("/"))
+  //       .addConverterFactory(new MyConverterFactory())
+  //       .build();
+  //   Annotated annotated = retrofit.create(Annotated.class);
+  //   annotated.queryParameter(null); // Trigger internal setup.
+  //
+  //   Annotation[] annotations = annotationsRef.get();
+  //   assertThat(annotations).hasAtLeastOneElementOfType(Annotated.Foo.class);
+  // }
 
-        return new Converter<Object, String>() {
-          @Override public String convert(Object value) throws IOException {
-            return String.valueOf(value);
-          }
-        };
-      }
-    }
-    Retrofit retrofit = new Retrofit.Builder()
-        .baseUrl(server.url("/"))
-        .addConverterFactory(new MyConverterFactory())
-        .build();
-    Annotated annotated = retrofit.create(Annotated.class);
-    annotated.queryParameter(null); // Trigger internal setup.
+  // @Test public void stringConverterCalledForString() {
+  //   final AtomicBoolean factoryCalled = new AtomicBoolean();
+  //   class MyConverterFactory extends Converter.Factory {
+  //     @Override public Converter<?, String> stringConverter(Type type, Annotation[] annotations,
+  //         Retrofit retrofit) {
+  //       factoryCalled.set(true);
+  //       return null;
+  //     }
+  //   }
+  //   Retrofit retrofit = new Retrofit.Builder()
+  //       .baseUrl(server.url("/"))
+  //       .addConverterFactory(new MyConverterFactory())
+  //       .build();
+  //   CallMethod service = retrofit.create(CallMethod.class);
+  //   Call<ResponseBody> call = service.queryString(null);
+  //   assertThat(call).isNotNull();
+  //   assertThat(factoryCalled.get()).isTrue();
+  // }
 
-    Annotation[] annotations = annotationsRef.get();
-    assertThat(annotations).hasAtLeastOneElementOfType(Annotated.Foo.class);
-  }
-
-  @Test public void stringConverterCalledForString() {
-    final AtomicBoolean factoryCalled = new AtomicBoolean();
-    class MyConverterFactory extends Converter.Factory {
-      @Override public Converter<?, String> stringConverter(Type type, Annotation[] annotations,
-          Retrofit retrofit) {
-        factoryCalled.set(true);
-        return null;
-      }
-    }
-    Retrofit retrofit = new Retrofit.Builder()
-        .baseUrl(server.url("/"))
-        .addConverterFactory(new MyConverterFactory())
-        .build();
-    CallMethod service = retrofit.create(CallMethod.class);
-    Call<ResponseBody> call = service.queryString(null);
-    assertThat(call).isNotNull();
-    assertThat(factoryCalled.get()).isTrue();
-  }
-
-  @Test public void stringConverterReturningNullResultsInDefault() {
-    final AtomicBoolean factoryCalled = new AtomicBoolean();
-    class MyConverterFactory extends Converter.Factory {
-      @Override public Converter<?, String> stringConverter(Type type, Annotation[] annotations,
-          Retrofit retrofit) {
-        factoryCalled.set(true);
-        return null;
-      }
-    }
-    Retrofit retrofit = new Retrofit.Builder()
-        .baseUrl(server.url("/"))
-        .addConverterFactory(new MyConverterFactory())
-        .build();
-    CallMethod service = retrofit.create(CallMethod.class);
-    Call<ResponseBody> call = service.queryObject(null);
-    assertThat(call).isNotNull();
-    assertThat(factoryCalled.get()).isTrue();
-  }
+  // @Test public void stringConverterReturningNullResultsInDefault() {
+  //   final AtomicBoolean factoryCalled = new AtomicBoolean();
+  //   class MyConverterFactory extends Converter.Factory {
+  //     @Override public Converter<?, String> stringConverter(Type type, Annotation[] annotations,
+  //         Retrofit retrofit) {
+  //       factoryCalled.set(true);
+  //       return null;
+  //     }
+  //   }
+  //   Retrofit retrofit = new Retrofit.Builder()
+  //       .baseUrl(server.url("/"))
+  //       .addConverterFactory(new MyConverterFactory())
+  //       .build();
+  //   CallMethod service = retrofit.create(CallMethod.class);
+  //   Call<ResponseBody> call = service.queryObject(null);
+  //   assertThat(call).isNotNull();
+  //   assertThat(factoryCalled.get()).isTrue();
+  // }
 
   @Test public void missingConverterThrowsOnNonRequestBody() throws IOException {
     Retrofit retrofit = new Retrofit.Builder()
@@ -1299,37 +1298,37 @@ public final class RetrofitTest {
   }
 
   /** Confirm that Retrofit encodes parameters when the call is executed, and not earlier. */
-  @Test public void argumentCapture() throws Exception {
-    AtomicInteger i = new AtomicInteger();
-
-    server.enqueue(new MockResponse().setBody("a"));
-    server.enqueue(new MockResponse().setBody("b"));
-
-    Retrofit retrofit = new Retrofit.Builder()
-        .baseUrl(server.url("/"))
-        .addConverterFactory(new ToStringConverterFactory())
-        .build();
-    MutableParameters mutableParameters = retrofit.create(MutableParameters.class);
-
-    i.set(100);
-    Call<String> call1 = mutableParameters.method(i);
-
-    i.set(101);
-    Response<String> response1 = call1.execute();
-
-    i.set(102);
-    assertEquals("a", response1.body());
-    assertEquals("/?i=101", server.takeRequest().getPath());
-
-    i.set(200);
-    Call<String> call2 = call1.clone();
-
-    i.set(201);
-    Response<String> response2 = call2.execute();
-
-    i.set(202);
-    assertEquals("b", response2.body());
-
-    assertEquals("/?i=201", server.takeRequest().getPath());
-  }
+  // @Test public void argumentCapture() throws Exception {
+  //   AtomicInteger i = new AtomicInteger();
+  //
+  //   server.enqueue(new MockResponse().setBody("a"));
+  //   server.enqueue(new MockResponse().setBody("b"));
+  //
+  //   Retrofit retrofit = new Retrofit.Builder()
+  //       .baseUrl(server.url("/"))
+  //       .addConverterFactory(new ToStringConverterFactory())
+  //       .build();
+  //   MutableParameters mutableParameters = retrofit.create(MutableParameters.class);
+  //
+  //   i.set(100);
+  //   Call<String> call1 = mutableParameters.method(i);
+  //
+  //   i.set(101);
+  //   Response<String> response1 = call1.execute();
+  //
+  //   i.set(102);
+  //   assertEquals("a", response1.body());
+  //   assertEquals("/?i=101", server.takeRequest().getPath());
+  //
+  //   i.set(200);
+  //   Call<String> call2 = call1.clone();
+  //
+  //   i.set(201);
+  //   Response<String> response2 = call2.execute();
+  //
+  //   i.set(202);
+  //   assertEquals("b", response2.body());
+  //
+  //   assertEquals("/?i=201", server.takeRequest().getPath());
+  // }
 }

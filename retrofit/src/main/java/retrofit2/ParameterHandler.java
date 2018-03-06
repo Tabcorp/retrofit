@@ -100,27 +100,6 @@ abstract class ParameterHandler<T> {
     }
   }
 
-  static final class Query<T> extends ParameterHandler<T> {
-    private final String name;
-    private final Converter<T, String> valueConverter;
-    private final boolean encoded;
-
-    Query(String name, Converter<T, String> valueConverter, boolean encoded) {
-      this.name = checkNotNull(name, "name == null");
-      this.valueConverter = valueConverter;
-      this.encoded = encoded;
-    }
-
-    @Override void apply(RequestBuilder builder, @Nullable T value) throws IOException {
-      if (value == null) return; // Skip null values.
-
-      String queryValue = valueConverter.convert(value);
-      if (queryValue == null) return; // Skip converted but null values
-
-      builder.addQueryParam(name, queryValue, encoded);
-    }
-  }
-
   static final class HeaderMap<T> extends ParameterHandler<Map<String, T>> {
     private final Converter<T, String> valueConverter;
 

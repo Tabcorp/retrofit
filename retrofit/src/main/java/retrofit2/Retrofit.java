@@ -91,8 +91,7 @@ public final class Retrofit {
    * <p>
    * Method parameters can be used to replace parts of the URL by annotating them with
    * {@link retrofit2.http.Path @Path}. Replacement sections are denoted by an identifier
-   * surrounded by curly braces (e.g., "{foo}"). To add items to the query string of a URL use
-   * {@link retrofit2.http.Query @Query}.
+   * surrounded by curly braces (e.g., "{foo}").
    * <p>
    * The body of a request is denoted by the {@link retrofit2.http.Body @Body} annotation. The
    * object will be converted to request representation by one of the {@link Converter.Factory}
@@ -120,7 +119,7 @@ public final class Retrofit {
    * <pre>
    * public interface CategoryService {
    *   &#64;POST("category/{cat}/")
-   *   Call&lt;List&lt;Item&gt;&gt; categoryList(@Path("cat") String a, @Query("page") int b);
+   *   Call&lt;List&lt;Item&gt;&gt; categoryList(@Path("cat") String a);
    * }
    * </pre>
    */
