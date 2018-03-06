@@ -31,7 +31,6 @@ import retrofit2.http.Part;
 import retrofit2.http.PartMap;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
-import retrofit2.http.QueryMap;
 
 /**
  * Convert objects to and from their representation in HTTP. Instances are created by {@linkplain
@@ -69,8 +68,8 @@ public interface Converter<F, T> {
      * Returns a {@link Converter} for converting {@code type} to a {@link String}, or null if
      * {@code type} cannot be handled by this factory. This is used to create converters for types
      * specified by {@link Field @Field}, {@link FieldMap @FieldMap} values,
-     * {@link Header @Header}, {@link HeaderMap @HeaderMap}, {@link Path @Path},
-     * {@link Query @Query}, and {@link QueryMap @QueryMap} values.
+     * {@link Header @Header}, {@link HeaderMap @HeaderMap}, {@link Path @Path}, and
+     * {@link Query @Query} values.
      */
     public @Nullable Converter<?, String> stringConverter(Type type, Annotation[] annotations,
         Retrofit retrofit) {

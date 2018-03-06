@@ -53,7 +53,6 @@ import retrofit2.http.Part;
 import retrofit2.http.PartMap;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
-import retrofit2.http.QueryMap;
 import retrofit2.http.QueryName;
 import retrofit2.http.Url;
 
@@ -459,26 +458,6 @@ final class ServiceMethod<R, T> {
               retrofit.stringConverter(type, annotations);
           return new ParameterHandler.QueryName<>(converter, encoded);
         }
-
-      } else if (annotation instanceof QueryMap) {
-        Class<?> rawParameterType = Utils.getRawType(type);
-        if (!Map.class.isAssignableFrom(rawParameterType)) {
-          throw parameterError(p, "@QueryMap parameter type must be Map.");
-        }
-        Type mapType = Utils.getSupertype(type, rawParameterType, Map.class);
-        if (!(mapType instanceof ParameterizedType)) {
-          throw parameterError(p, "Map must include generic types (e.g., Map<String, String>)");
-        }
-        ParameterizedType parameterizedType = (ParameterizedType) mapType;
-        Type keyType = Utils.getParameterUpperBound(0, parameterizedType);
-        if (String.class != keyType) {
-          throw parameterError(p, "@QueryMap keys must be of type String: " + keyType);
-        }
-        Type valueType = Utils.getParameterUpperBound(1, parameterizedType);
-        Converter<?, String> valueConverter =
-            retrofit.stringConverter(valueType, annotations);
-
-        return new ParameterHandler.QueryMap<>(valueConverter, ((QueryMap) annotation).encoded());
 
       } else if (annotation instanceof Header) {
         Header header = (Header) annotation;

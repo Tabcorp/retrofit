@@ -57,7 +57,6 @@ import retrofit2.http.Part;
 import retrofit2.http.PartMap;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
-import retrofit2.http.QueryMap;
 import retrofit2.http.QueryName;
 import retrofit2.http.Url;
 
@@ -442,96 +441,6 @@ public final class RequestBuilderTest {
     } catch (IllegalArgumentException e) {
       assertThat(e).hasMessage(
           "Non-body HTTP method cannot contain @Body.\n    for method Example.method");
-    }
-  }
-
-  @Test public void queryMapMustBeAMap() {
-    class Example {
-      @GET("/") //
-      Call<ResponseBody> method(@QueryMap List<String> a) {
-        return null;
-      }
-    }
-    try {
-      buildRequest(Example.class);
-      fail();
-    } catch (IllegalArgumentException e) {
-      assertThat(e).hasMessage(
-          "@QueryMap parameter type must be Map. (parameter #1)\n    for method Example.method");
-    }
-  }
-
-  @Test public void queryMapSupportsSubclasses() {
-    class Foo extends HashMap<String, String> {
-    }
-
-    class Example {
-      @GET("/") //
-      Call<ResponseBody> method(@QueryMap Foo a) {
-        return null;
-      }
-    }
-
-    Foo foo = new Foo();
-    foo.put("hello", "world");
-
-    Request request = buildRequest(Example.class, foo);
-    assertThat(request.url().toString()).isEqualTo("http://example.com/?hello=world");
-  }
-
-  @Test public void queryMapRejectsNull() {
-    class Example {
-      @GET("/") //
-      Call<ResponseBody> method(@QueryMap Map<String, String> a) {
-        return null;
-      }
-    }
-
-    try {
-      buildRequest(Example.class, new Object[] { null });
-      fail();
-    } catch (IllegalArgumentException e) {
-      assertThat(e).hasMessage("Query map was null.");
-    }
-  }
-
-  @Test public void queryMapRejectsNullKeys() {
-    class Example {
-      @GET("/") //
-      Call<ResponseBody> method(@QueryMap Map<String, String> a) {
-        return null;
-      }
-    }
-
-    Map<String, String> queryParams = new LinkedHashMap<>();
-    queryParams.put("ping", "pong");
-    queryParams.put(null, "kat");
-
-    try {
-      buildRequest(Example.class, queryParams);
-      fail();
-    } catch (IllegalArgumentException e) {
-      assertThat(e).hasMessage("Query map contained null key.");
-    }
-  }
-
-  @Test public void queryMapRejectsNullValues() {
-    class Example {
-      @GET("/") //
-      Call<ResponseBody> method(@QueryMap Map<String, String> a) {
-        return null;
-      }
-    }
-
-    Map<String, String> queryParams = new LinkedHashMap<>();
-    queryParams.put("ping", "pong");
-    queryParams.put("kit", null);
-
-    try {
-      buildRequest(Example.class, queryParams);
-      fail();
-    } catch (IllegalArgumentException e) {
-      assertThat(e).hasMessage("Query map contained null value for key 'kit'.");
     }
   }
 
@@ -1185,44 +1094,6 @@ public final class RequestBuilderTest {
     assertThat(request.method()).isEqualTo("GET");
     assertThat(request.headers().size()).isZero();
     assertThat(request.url().toString()).isEqualTo("http://example.com/foo/bar/?1&2&3&1");
-    assertThat(request.body()).isNull();
-  }
-
-  @Test public void getWithQueryParamMap() {
-    class Example {
-      @GET("/foo/bar/") //
-      Call<ResponseBody> method(@QueryMap Map<String, Object> query) {
-        return null;
-      }
-    }
-
-    Map<String, Object> params = new LinkedHashMap<>();
-    params.put("kit", "kat");
-    params.put("ping", "pong");
-
-    Request request = buildRequest(Example.class, params);
-    assertThat(request.method()).isEqualTo("GET");
-    assertThat(request.headers().size()).isZero();
-    assertThat(request.url().toString()).isEqualTo("http://example.com/foo/bar/?kit=kat&ping=pong");
-    assertThat(request.body()).isNull();
-  }
-
-  @Test public void getWithEncodedQueryParamMap() {
-    class Example {
-      @GET("/foo/bar/") //
-      Call<ResponseBody> method(@QueryMap(encoded = true) Map<String, Object> query) {
-        return null;
-      }
-    }
-
-    Map<String, Object> params = new LinkedHashMap<>();
-    params.put("kit", "k%20t");
-    params.put("pi%20ng", "p%20g");
-
-    Request request = buildRequest(Example.class, params);
-    assertThat(request.method()).isEqualTo("GET");
-    assertThat(request.headers().size()).isZero();
-    assertThat(request.url().toString()).isEqualTo("http://example.com/foo/bar/?kit=k%20t&pi%20ng=p%20g");
     assertThat(request.body()).isNull();
   }
 
@@ -2593,28 +2464,6 @@ public final class RequestBuilderTest {
     Request request = buildRequest(Example.class, retrofitBuilder, "Ignored");
 
     assertThat(request.url().toString()).doesNotContain("Ignored");
-  }
-
-  @Test public void queryParamMapsConvertedToNullShouldError() throws Exception {
-    class Example {
-      @GET("/query") Call<ResponseBody> queryPath(@QueryMap Map<String, String> a) {
-        return null;
-      }
-    }
-
-    Retrofit.Builder retrofitBuilder = new Retrofit.Builder()
-        .baseUrl("http://example.com")
-        .addConverterFactory(new NullObjectConverterFactory());
-
-    Map<String, String> queryMap = Collections.singletonMap("kit", "kat");
-
-    try {
-      buildRequest(Example.class, retrofitBuilder, queryMap);
-      fail();
-    } catch (IllegalArgumentException e) {
-      assertThat(e).hasMessageContaining(
-          "Query map value 'kat' converted to null by retrofit2.helpers.NullObjectConverterFactory$1 for key 'kit'.");
-    }
   }
 
   @Test public void fieldParamsSkippedIfConvertedToNull() throws Exception {

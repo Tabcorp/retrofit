@@ -52,7 +52,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * Calling with {@code foo.friends("name+age"))} yields {@code /friends?name+age}.
  *
  * @see Query
- * @see QueryMap
  */
 @Documented
 @Target(PARAMETER)

@@ -136,48 +136,6 @@ abstract class ParameterHandler<T> {
     }
   }
 
-  static final class QueryMap<T> extends ParameterHandler<Map<String, T>> {
-    private final Converter<T, String> valueConverter;
-    private final boolean encoded;
-
-    QueryMap(Converter<T, String> valueConverter, boolean encoded) {
-      this.valueConverter = valueConverter;
-      this.encoded = encoded;
-    }
-
-    @Override void apply(RequestBuilder builder, @Nullable Map<String, T> value)
-        throws IOException {
-      if (value == null) {
-        throw new IllegalArgumentException("Query map was null.");
-      }
-
-      for (Map.Entry<String, T> entry : value.entrySet()) {
-        String entryKey = entry.getKey();
-        if (entryKey == null) {
-          throw new IllegalArgumentException("Query map contained null key.");
-        }
-        T entryValue = entry.getValue();
-        if (entryValue == null) {
-          throw new IllegalArgumentException(
-              "Query map contained null value for key '" + entryKey + "'.");
-        }
-
-        String convertedEntryValue = valueConverter.convert(entryValue);
-        if (convertedEntryValue == null) {
-          throw new IllegalArgumentException("Query map value '"
-              + entryValue
-              + "' converted to null by "
-              + valueConverter.getClass().getName()
-              + " for key '"
-              + entryKey
-              + "'.");
-        }
-
-        builder.addQueryParam(entryKey, convertedEntryValue, encoded);
-      }
-    }
-  }
-
   static final class HeaderMap<T> extends ParameterHandler<Map<String, T>> {
     private final Converter<T, String> valueConverter;
 

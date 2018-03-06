@@ -64,7 +64,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * </code></pre>
  * Calling with {@code foo.friends("foo+bar"))} yields {@code /friends?group=foo+bar}.
  *
- * @see QueryMap
  * @see QueryName
  */
 @Documented
