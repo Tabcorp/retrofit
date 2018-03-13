@@ -31,7 +31,7 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 import retrofit2.http.GET;
-import retrofit2.http.Query;
+import retrofit2.http.Variable;
 
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
@@ -86,8 +86,8 @@ public final class JsonQueryParameters {
   }
 
   interface Service {
-    @GET("/filter")
-    Call<ResponseBody> example(@Json @Query("value") Filter value);
+    @GET("/filter{?value}")
+    Call<ResponseBody> example(@Json @Variable("value") Filter value);
   }
 
   public static void main(String... args) throws IOException, InterruptedException {

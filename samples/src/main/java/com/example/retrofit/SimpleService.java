@@ -21,7 +21,7 @@ import retrofit2.Call;
 import retrofit2.converter.gson.GsonConverterFactory;
 import retrofit2.Retrofit;
 import retrofit2.http.GET;
-import retrofit2.http.Path;
+import retrofit2.http.Variable;
 
 public final class SimpleService {
   public static final String API_URL = "https://api.github.com";
@@ -39,8 +39,8 @@ public final class SimpleService {
   public interface GitHub {
     @GET("/repos/{owner}/{repo}/contributors")
     Call<List<Contributor>> contributors(
-        @Path("owner") String owner,
-        @Path("repo") String repo);
+        @Variable("owner") String owner,
+        @Variable("repo") String repo);
   }
 
   public static void main(String... args) throws IOException {
