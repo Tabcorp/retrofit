@@ -68,7 +68,7 @@ public final class RequestBuilderTest {
 
   @Test public void customMethodNoBody() {
     class Example {
-      @HTTP(method = "CUSTOM1", path = "/foo")
+      @HTTP(method = "CUSTOM1", urlTemplate = "/foo")
       Call<ResponseBody> method() {
         return null;
       }
@@ -83,7 +83,7 @@ public final class RequestBuilderTest {
   @Ignore("https://github.com/square/okhttp/issues/229")
   @Test public void customMethodWithBody() {
     class Example {
-      @HTTP(method = "CUSTOM2", path = "/foo", hasBody = true)
+      @HTTP(method = "CUSTOM2", urlTemplate = "/foo", hasBody = true)
       Call<ResponseBody> method(@Body RequestBody body) {
         return null;
       }
@@ -974,7 +974,7 @@ public final class RequestBuilderTest {
   @Ignore("https://github.com/square/okhttp/issues/229")
   @Test public void customMethodEmptyBody() {
     class Example {
-      @HTTP(method = "CUSTOM", path = "/foo/bar/", hasBody = true) //
+      @HTTP(method = "CUSTOM", urlTemplate = "/foo/bar/", hasBody = true) //
       Call<ResponseBody> method() {
         return null;
       }

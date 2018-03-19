@@ -36,4 +36,5 @@ public @interface PUT {
    * this is resolved against a base URL to create the full endpoint URL.
    */
   String value() default "";
+  String identifier() default "";
 }

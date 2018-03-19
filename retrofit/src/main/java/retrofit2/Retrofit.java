@@ -62,16 +62,18 @@ public final class Retrofit {
 
   final okhttp3.Call.Factory callFactory;
   final HttpUrl baseUrl;
+  final UrlProvider urlProvider;
   final List<Converter.Factory> converterFactories;
   final List<CallAdapter.Factory> adapterFactories;
   final @Nullable Executor callbackExecutor;
   final boolean validateEagerly;
 
-  Retrofit(okhttp3.Call.Factory callFactory, HttpUrl baseUrl,
+  Retrofit(okhttp3.Call.Factory callFactory, HttpUrl baseUrl, UrlProvider urlProvider,
       List<Converter.Factory> converterFactories, List<CallAdapter.Factory> adapterFactories,
       @Nullable Executor callbackExecutor, boolean validateEagerly) {
     this.callFactory = callFactory;
     this.baseUrl = baseUrl;
+    this.urlProvider = urlProvider;
     this.converterFactories = unmodifiableList(converterFactories); // Defensive copy at call site.
     this.adapterFactories = unmodifiableList(adapterFactories); // Defensive copy at call site.
     this.callbackExecutor = callbackExecutor;
@@ -180,6 +182,11 @@ public final class Retrofit {
   /** The API base URL. */
   public HttpUrl baseUrl() {
     return baseUrl;
+  }
+
+  /** The URL Provider. */
+  public UrlProvider urlProvider() {
+    return urlProvider;
   }
 
   /**
@@ -390,6 +397,7 @@ public final class Retrofit {
     private final Platform platform;
     private @Nullable okhttp3.Call.Factory callFactory;
     private HttpUrl baseUrl;
+    private UrlProvider urlProvider;
     private final List<Converter.Factory> converterFactories = new ArrayList<>();
     private final List<CallAdapter.Factory> adapterFactories = new ArrayList<>();
     private @Nullable Executor callbackExecutor;
@@ -511,6 +519,12 @@ public final class Retrofit {
       return this;
     }
 
+    public Builder urlProvider(UrlProvider urlProvider) {
+      checkNotNull(urlProvider, "urlProvider == null");
+      this.urlProvider = urlProvider;
+      return this;
+    }
+
     /** Add converter factory for serialization and deserialization of objects. */
     public Builder addConverterFactory(Converter.Factory factory) {
       converterFactories.add(checkNotNull(factory, "factory == null"));
@@ -575,8 +589,8 @@ public final class Retrofit {
       // Make a defensive copy of the converters.
       List<Converter.Factory> converterFactories = new ArrayList<>(this.converterFactories);
 
-      return new Retrofit(callFactory, baseUrl, converterFactories, adapterFactories,
-          callbackExecutor, validateEagerly);
+      return new Retrofit(callFactory, baseUrl, urlProvider, converterFactories,
+          adapterFactories, callbackExecutor, validateEagerly);
     }
   }
 }

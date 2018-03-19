@@ -45,12 +45,13 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 public @interface HTTP {
   String method();
   /**
-   * A relative or absolute path, or full URL of the endpoint. This value is optional if the first
+   * A RFC6570 URI Template. This value is optional if the first
    * parameter of the method is annotated with {@link Url @Url}.
    * <p>
    * See {@linkplain retrofit2.Retrofit.Builder#baseUrl(HttpUrl) base URL} for details of how
    * this is resolved against a base URL to create the full endpoint URL.
    */
-  String path() default "";
+  String urlTemplate() default "";
+  String urlIdentifier() default "";
   boolean hasBody() default false;
 }

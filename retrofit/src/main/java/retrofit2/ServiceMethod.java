@@ -55,11 +55,13 @@ import retrofit2.http.Variable;
 final class ServiceMethod<R, T> {
   final okhttp3.Call.Factory callFactory;
   final CallAdapter<R, T> callAdapter;
+  final UrlProvider urlProvider;
 
   private final HttpUrl baseUrl;
   private final Converter<ResponseBody, R> responseConverter;
   private final String httpMethod;
   private final UriTemplate urlTemplate;
+  private final String urlIdentifier;
   private final Headers headers;
   private final MediaType contentType;
   private final boolean hasBody;
@@ -70,10 +72,12 @@ final class ServiceMethod<R, T> {
   ServiceMethod(Builder<R, T> builder) {
     this.callFactory = builder.retrofit.callFactory();
     this.callAdapter = builder.callAdapter;
+    this.urlProvider = builder.retrofit.urlProvider();
     this.baseUrl = builder.retrofit.baseUrl();
     this.responseConverter = builder.responseConverter;
     this.httpMethod = builder.httpMethod;
     this.urlTemplate = builder.urlTemplate;
+    this.urlIdentifier = builder.urlIdentifier;
     this.headers = builder.headers;
     this.contentType = builder.contentType;
     this.hasBody = builder.hasBody;
@@ -84,6 +88,11 @@ final class ServiceMethod<R, T> {
 
   /** Builds an HTTP request from method arguments. */
   Request toRequest(@Nullable Object... args) throws IOException {
+    UriTemplate urlTemplate = this.urlTemplate;
+    if (urlIdentifier != null) {
+      urlTemplate = urlProvider.getUrlTemplateByIdentifier(urlIdentifier);
+    }
+
     RequestBuilder requestBuilder = new RequestBuilder(httpMethod, baseUrl, urlTemplate, headers,
         contentType, hasBody, isFormEncoded, isMultipart);
 
@@ -130,6 +139,7 @@ final class ServiceMethod<R, T> {
     boolean isFormEncoded;
     boolean isMultipart;
     UriTemplate urlTemplate;
+    String urlIdentifier;
     Headers headers;
     MediaType contentType;
     ParameterHandler<?>[] parameterHandlers;
@@ -190,7 +200,7 @@ final class ServiceMethod<R, T> {
         parameterHandlers[p] = parseParameter(p, parameterType, parameterAnnotations);
       }
 
-      if (urlTemplate == null && !gotUrl) {
+      if (urlTemplate == null && urlIdentifier == null && !gotUrl) {
         throw methodError("Missing either @%s URL or @Url parameter.", httpMethod);
       }
       if (!isFormEncoded && !isMultipart && !hasBody && gotBody) {
@@ -226,25 +236,33 @@ final class ServiceMethod<R, T> {
 
     private void parseMethodAnnotation(Annotation annotation) {
       if (annotation instanceof DELETE) {
-        parseHttpMethodAndPath("DELETE", ((DELETE) annotation).value(), false);
+        DELETE delete = (DELETE) annotation;
+        parseHttpMethodAnnotation("DELETE", delete.value(), delete.identifier(), false);
       } else if (annotation instanceof GET) {
-        parseHttpMethodAndPath("GET", ((GET) annotation).value(), false);
+        GET get = (GET) annotation;
+        parseHttpMethodAnnotation("GET", get.value(), get.identifier(), false);
       } else if (annotation instanceof HEAD) {
-        parseHttpMethodAndPath("HEAD", ((HEAD) annotation).value(), false);
+        HEAD head = (HEAD) annotation;
+        parseHttpMethodAnnotation("HEAD", head.value(), head.identifier(), false);
         if (!Void.class.equals(responseType)) {
           throw methodError("HEAD method must use Void as response type.");
         }
       } else if (annotation instanceof PATCH) {
-        parseHttpMethodAndPath("PATCH", ((PATCH) annotation).value(), true);
+        PATCH patch = (PATCH) annotation;
+        parseHttpMethodAnnotation("PATCH", patch.value(), patch.identifier(), true);
       } else if (annotation instanceof POST) {
-        parseHttpMethodAndPath("POST", ((POST) annotation).value(), true);
+        POST post = (POST) annotation;
+        parseHttpMethodAnnotation("POST", post.value(), post.identifier(), true);
       } else if (annotation instanceof PUT) {
-        parseHttpMethodAndPath("PUT", ((PUT) annotation).value(), true);
+        PUT put = (PUT) annotation;
+        parseHttpMethodAnnotation("PUT", put.value(), put.identifier(), true);
       } else if (annotation instanceof OPTIONS) {
-        parseHttpMethodAndPath("OPTIONS", ((OPTIONS) annotation).value(), false);
+        OPTIONS options = (OPTIONS) annotation;
+        parseHttpMethodAnnotation("OPTIONS", options.value(), options.identifier(), false);
       } else if (annotation instanceof HTTP) {
         HTTP http = (HTTP) annotation;
-        parseHttpMethodAndPath(http.method(), http.path(), http.hasBody());
+        parseHttpMethodAnnotation(http.method(), http.urlTemplate(), http.urlIdentifier(),
+            http.hasBody());
       } else if (annotation instanceof retrofit2.http.Headers) {
         String[] headersToParse = ((retrofit2.http.Headers) annotation).value();
         if (headersToParse.length == 0) {
@@ -264,19 +282,20 @@ final class ServiceMethod<R, T> {
       }
     }
 
-    private void parseHttpMethodAndPath(String httpMethod, String value, boolean hasBody) {
+    private void parseHttpMethodAnnotation(String httpMethod, String urlTemplate,
+        String urlIdentifier, boolean hasBody) {
       if (this.httpMethod != null) {
         throw methodError("Only one HTTP method is allowed. Found: %s and %s.",
             this.httpMethod, httpMethod);
       }
       this.httpMethod = httpMethod;
       this.hasBody = hasBody;
-
-      if (value.isEmpty()) {
-        return;
+      if (!urlIdentifier.isEmpty()) {
+        this.urlIdentifier = urlIdentifier;
       }
-
-      this.urlTemplate = UriTemplate.fromTemplate(value);
+      if (!urlTemplate.isEmpty()) {
+        this.urlTemplate = UriTemplate.fromTemplate(urlTemplate);
+      }
     }
 
     private Headers parseHeaders(String[] headers) {
@@ -333,7 +352,7 @@ final class ServiceMethod<R, T> {
         if (gotUrl) {
           throw parameterError(p, "Multiple @Url method annotations found.");
         }
-        if (urlTemplate != null) {
+        if (urlTemplate != null || urlIdentifier != null) {
           throw parameterError(p, "@Url cannot be used with @%s URL", httpMethod);
         }
 
